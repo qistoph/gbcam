@@ -6,6 +6,26 @@ import numpy as np
 from gbc_palettes import palettes
 import pyfakewebcam
 import PySimpleGUI as sg
+import oyaml as yaml
+
+config_filename = 'config.yaml'
+
+try:
+    with open(config_filename) as f:
+        config = yaml.safe_load(f)
+except FileNotFoundError:
+    config = {}
+
+if 'palette' not in config:
+    config['palette'] = 'CRTGB'
+if 'brightness' not in config:
+    config['brightness'] = 0
+if 'contrast'  not in config:
+    config['contrast'] = 1
+if 'gamma'  not in config:
+    config['gamma'] = 1
+if 'dither'  not in config:
+    config['dither'] = 0.5
 
 #OUT_SIZE=(1066, 600)
 #OUT_SIZE=(800, 600)
@@ -94,13 +114,13 @@ layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
     [
-        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value="CRTGB", size=(20, 1), key="-PALETTE-")
+        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value=config['palette'], size=(20, 1), key="-PALETTE-")
     ],
     [
         sg.Text("Brightness"),
         sg.Slider(
             (-255, 255),
-            0,
+            config['brightness'],
             1,
             orientation="h",
             size=(40, 15),
@@ -111,7 +131,7 @@ layout = [
         sg.Text("Contrast"),
         sg.Slider(
             (-4, 4),
-            1,
+            config['contrast'],
             0.2,
             orientation="h",
             size=(40, 15),
@@ -122,7 +142,7 @@ layout = [
         sg.Text("Gamma"),
         sg.Slider(
             (-4, 4),
-            1,
+            config['gamma'],
             0.2,
             orientation="h",
             size=(40, 15),
@@ -133,7 +153,7 @@ layout = [
         sg.Text("Dither"),
         sg.Slider(
             (0, 10),
-            0.5,
+            config['dither'],
             0.1,
             orientation="h",
             size=(40, 15),
@@ -156,7 +176,7 @@ while(True):
     #print(frame.shape)
     #print(type(frame))
 
-    palette = palettes['AYY4']
+    palette = palettes['CRTGB']
     if values['-PALETTE-'] in palettes:
         palette = palettes[values["-PALETTE-"]]
 
@@ -167,29 +187,31 @@ while(True):
     frame = colorize(frame, palette)
     frame = resize(frame, 800, 720)
 
-    #background = np.zeros((OUT_SIZE[1],OUT_SIZE[0],3), dtype=np.uint8)
-
     xoff = (OUT_SIZE[0]-800)//2
-    #print("xoff:", xoff, OUT_SIZE[0])
     if xoff > 0:
         frame_bg = np.copy(background)
         frame_bg[:,xoff:-xoff,:] = frame
         frame = frame_bg
 
-    #frame = frame * 64
-    #cv2.imshow('frame', frame)
     imgbytes = cv2.imencode(".png", cv2.resize(frame, (400, 225)))[1].tobytes()
     window["-IMAGE-"].update(data=imgbytes)
 
     fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+    config['palette'] = values['-PALETTE-']
+    config['contrast'] = values['-CONTRAST-']
+    config['brightness'] = values['-BRIGTHNESS-']
+    config['dither'] = values['-DITHER-']
+
     wk = cv2.waitKey(1) & 0xFF
-    #print(wk)
 
     if wk == ord('q'):
         break
 
     time.sleep(1/30.0)
+
+with open(config_filename, 'w') as f:
+    f.write(yaml.dump(config))
 
 window.close()
 vid.release()
