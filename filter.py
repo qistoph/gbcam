@@ -8,6 +8,7 @@ import pyfakewebcam
 import PySimpleGUI as sg
 import oyaml as yaml
 from collections import namedtuple
+from emojimg import thumbs_up
 
 config_filename = 'config.yaml'
 
@@ -25,6 +26,8 @@ config_items = [
     ConfigItem('contrast', '-CONTRAST-', 1),
     ConfigItem('gamma', '-GAMMA-', 1),
     ConfigItem('dither', '-DITHER-', 0.5),
+    ConfigItem('mirror', '-MIRROR-', True),
+    ConfigItem('background', '-BACKGROUND-', True),
 ]
 
 for item in config_items:
@@ -116,7 +119,8 @@ def bayerFilter(data_grey, ditherFactor = 0.5):
     return data_B
 
 def colorize(data, palette):
-    palette = np.array(palette, dtype=np.uint8)[:,[2,1,0]]
+    #palette = np.array(palette, dtype=np.uint8)[:,[2,1,0]]
+    palette = np.array(palette, dtype=np.uint8)
     return palette[data]
 
 bayer8 = np.array(bayer_matrix(3))
@@ -133,7 +137,9 @@ layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
     [
-        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value=config['palette'], size=(20, 1), key="-PALETTE-")
+        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value=config['palette'], size=(20, 1), key="-PALETTE-"),
+        sg.Checkbox('Mirror preview', default=config['mirror'], key="-MIRROR-"),
+        sg.Checkbox('Background', default=config['background'], key="-BACKGROUND-"),
     ],
     [
         sg.Text("Brightness"),
@@ -185,6 +191,45 @@ window = sg.Window(window_default_title, layout)
 
 background = resize(cv2.imread("background2.png"), *OUT_SIZE)
 
+def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=None):
+    """
+    @brief      Overlays a transparant PNG onto another image using CV2
+
+    @param      background_img    The background image
+    @param      img_to_overlay_t  The transparent image to overlay (has alpha channel)
+    @param      x                 x location to place the top-left corner of our overlay
+    @param      y                 y location to place the top-left corner of our overlay
+    @param      overlay_size      The size to scale our overlay to (tuple), no scaling if None
+
+    @return     Background image with overlay on top
+    """
+
+    bg_img = background_img.copy()
+
+    if overlay_size is not None:
+        img_to_overlay_t = cv2.resize(img_to_overlay_t.copy(), overlay_size)
+
+    # Extract the alpha mask of the RGBA image, convert to RGB
+    b,g,r,a = cv2.split(img_to_overlay_t)
+    overlay_color = cv2.merge((b,g,r))
+
+    # Apply some simple filtering to remove edge noise
+    mask = cv2.medianBlur(a,5)
+
+    h, w, _ = overlay_color.shape
+    roi = bg_img[y:y+h, x:x+w]
+
+    # Black-out the area behind the logo in our original ROI
+    img1_bg = cv2.bitwise_and(roi.copy(),roi.copy(),mask = cv2.bitwise_not(mask))
+
+    # Mask out the logo from the logo image.
+    img2_fg = cv2.bitwise_and(overlay_color,overlay_color,mask = mask)
+
+    # Update the original image with our new ROI
+    bg_img[y:y+h, x:x+w] = cv2.add(img1_bg, img2_fg)
+
+    return bg_img
+
 while(True):
     event, values = window.read(timeout=20)
     if event == sg.WIN_CLOSED:
@@ -208,11 +253,26 @@ while(True):
 
     xoff = (OUT_SIZE[0]-800)//2
     if xoff > 0:
-        frame_bg = np.copy(background)
+        if values['-BACKGROUND-']:
+            frame_bg = np.copy(background)
+        else:
+            frame_bg = np.zeros(background.shape).astype(np.uint8)
         frame_bg[:,xoff:-xoff,:] = frame
         frame = frame_bg
 
-    imgbytes = cv2.imencode(".png", cv2.resize(frame, (400, 225)))[1].tobytes()
+    # 136x128 emoji
+    #frame[0:126,0:128] = thumbs_up
+    #frame = overlay_transparent(frame, thumbs_up, 10, 10)
+
+    preview = frame
+    if values['-MIRROR-']:
+        preview = cv2.flip(preview, 1)
+
+    imgbytes = cv2.imencode(".png", 
+            cv2.resize(
+                cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
+                (400, 225))
+            )[1].tobytes()
     window["-IMAGE-"].update(data=imgbytes)
 
     fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
