@@ -7,6 +7,7 @@ from gbc_palettes import palettes
 import pyfakewebcam
 import PySimpleGUI as sg
 import oyaml as yaml
+from collections import namedtuple
 
 config_filename = 'config.yaml'
 
@@ -16,16 +17,26 @@ try:
 except FileNotFoundError:
     config = {}
 
-if 'palette' not in config:
-    config['palette'] = 'CRTGB'
-if 'brightness' not in config:
-    config['brightness'] = 0
-if 'contrast'  not in config:
-    config['contrast'] = 1
-if 'gamma'  not in config:
-    config['gamma'] = 1
-if 'dither'  not in config:
-    config['dither'] = 0.5
+ConfigItem = namedtuple('ConfigItem', ['id','value_name','default_value'])
+
+config_items = [
+    ConfigItem('palette', '-PALETTE-', 'CRTGB'),
+    ConfigItem('brightness', '-BRIGTHNESS-', 0),
+    ConfigItem('contrast', '-CONTRAST-', 1),
+    ConfigItem('gamma', '-GAMMA-', 1),
+    ConfigItem('dither', '-DITHER-', 0.5),
+]
+
+for item in config_items:
+    if item.id not in config:
+        config[item.id] = item.default_value
+
+config_changed = False
+config_saveat = time.time()
+
+def config_save():
+    with open(config_filename, 'w') as f:
+        f.write(yaml.dump(config))
 
 #OUT_SIZE=(1066, 600)
 #OUT_SIZE=(800, 600)
@@ -110,6 +121,14 @@ def colorize(data, palette):
 
 bayer8 = np.array(bayer_matrix(3))
 
+window_default_title = "GBCam"
+
+def title_update():
+    title = window_default_title
+    if config_changed:
+        title += "*"
+    window.TKroot.title(title)
+
 layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
@@ -162,7 +181,7 @@ layout = [
     ],
 ]
 
-window = sg.Window("GBCam", layout)
+window = sg.Window(window_default_title, layout)
 
 background = resize(cv2.imread("background2.png"), *OUT_SIZE)
 
@@ -198,10 +217,18 @@ while(True):
 
     fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
-    config['palette'] = values['-PALETTE-']
-    config['contrast'] = values['-CONTRAST-']
-    config['brightness'] = values['-BRIGTHNESS-']
-    config['dither'] = values['-DITHER-']
+    for item in config_items:
+        if item.value_name in values:
+            if config[item.id] != values[item.value_name]:
+                config[item.id] = values[item.value_name]
+                config_changed = True
+                config_saveat = time.time() + 2
+                title_update()
+
+    if config_changed and config_saveat < time.time():
+        config_save()
+        config_changed = False
+        title_update()
 
     wk = cv2.waitKey(1) & 0xFF
 
@@ -210,8 +237,7 @@ while(True):
 
     time.sleep(1/30.0)
 
-with open(config_filename, 'w') as f:
-    f.write(yaml.dump(config))
+config_save()
 
 window.close()
 vid.release()
