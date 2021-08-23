@@ -7,8 +7,9 @@ from gbc_palettes import palettes
 import pyfakewebcam
 import PySimpleGUI as sg
 
-OUT_SIZE=(1066, 600)
+#OUT_SIZE=(1066, 600)
 #OUT_SIZE=(800, 600)
+OUT_SIZE=(1280, 720)
 
 vid = cv2.VideoCapture(0)
 fake = pyfakewebcam.FakeWebcam('/dev/video2', *OUT_SIZE)
@@ -93,7 +94,7 @@ layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
     [
-        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value="AYY4", size=(20, 1), key="-PALETTE-")
+        sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value="CRTGB", size=(20, 1), key="-PALETTE-")
     ],
     [
         sg.Text("Brightness"),
@@ -143,6 +144,8 @@ layout = [
 
 window = sg.Window("GBCam", layout)
 
+background = resize(cv2.imread("background2.png"), *OUT_SIZE)
+
 while(True):
     event, values = window.read(timeout=20)
     if event == sg.WIN_CLOSED:
@@ -162,20 +165,20 @@ while(True):
     frame = brightness(frame, values["-BRIGTHNESS-"])
     frame = bayerFilter(frame, values['-DITHER-'])
     frame = colorize(frame, palette)
-    frame = resize(frame, 800, 600)
+    frame = resize(frame, 800, 720)
+
+    #background = np.zeros((OUT_SIZE[1],OUT_SIZE[0],3), dtype=np.uint8)
 
     xoff = (OUT_SIZE[0]-800)//2
+    #print("xoff:", xoff, OUT_SIZE[0])
     if xoff > 0:
-        background = np.zeros((OUT_SIZE[1],OUT_SIZE[0],3), dtype=np.uint8)
-        #background[:,:,0] = 255
-
         frame_bg = np.copy(background)
         frame_bg[:,xoff:-xoff,:] = frame
         frame = frame_bg
 
     #frame = frame * 64
     #cv2.imshow('frame', frame)
-    imgbytes = cv2.imencode(".png", frame)[1].tobytes()
+    imgbytes = cv2.imencode(".png", cv2.resize(frame, (400, 225)))[1].tobytes()
     window["-IMAGE-"].update(data=imgbytes)
 
     fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
