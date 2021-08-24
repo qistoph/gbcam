@@ -10,6 +10,8 @@ import oyaml as yaml
 from collections import namedtuple
 from emojimg import thumbs_up
 
+# sudo modprobe v4l2loopback devices=2
+
 config_filename = 'config.yaml'
 
 try:
@@ -21,13 +23,14 @@ except FileNotFoundError:
 ConfigItem = namedtuple('ConfigItem', ['id','value_name','default_value'])
 
 config_items = [
+    ConfigItem('mirror', '-MIRROR-', True),
+    ConfigItem('background', '-BACKGROUND-', True),
     ConfigItem('palette', '-PALETTE-', 'CRTGB'),
-    ConfigItem('brightness', '-BRIGTHNESS-', 0),
+    ConfigItem('brightness', '-BRIGHTNESS-', 0),
     ConfigItem('contrast', '-CONTRAST-', 1),
     ConfigItem('gamma', '-GAMMA-', 1),
     ConfigItem('dither', '-DITHER-', 0.5),
-    ConfigItem('mirror', '-MIRROR-', True),
-    ConfigItem('background', '-BACKGROUND-', True),
+    ConfigItem('fps', '-FPS-', 10),
 ]
 
 for item in config_items:
@@ -72,13 +75,13 @@ def resize(im, W=160, H=144):
     #return cv2.resize(im_crop, dsize=(W, H), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
     return cv2.resize(im_crop, dsize=(W, H), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
 
-def greyscale(data, contrast=1.0, gamma=1.0):
+def greyscale(data, contrast=1.0, gamma=1.0, brightness=0.0):
     grey_factors = np.array([0.3, 0.59, 0.11]) / 255 # RGB ratios and bytes to units
 
     # RGB bytes to greyscale units
     data_grey = data.dot(grey_factors)
     # Apply contrast
-    data_grey = (data_grey - 0.5) * contrast + 0.5
+    data_grey = (data_grey - 0.5) * contrast + 0.5 + brightness
     # Limit darker than black or lighter than white
     data_grey = data_grey.clip(0, 1)
     # Apply gamma, no clip needed (x^gamma = 0->1, for x = 0->1)
@@ -87,11 +90,6 @@ def greyscale(data, contrast=1.0, gamma=1.0):
     # Units to bytes
     data_grey = data_grey * 255
     return data_grey.astype(np.uint8)
-
-def brightness(data, brightness):
-    #data += int(brightness)
-    data = np.where((255 - data) < brightness, 255, data+brightness)
-    return data
 
 # https://gamedev.stackexchange.com/questions/130696/how-to-generate-bayer-matrix-of-arbitrary-size
 def bit_reverse(x, n):
@@ -144,12 +142,12 @@ layout = [
     [
         sg.Text("Brightness"),
         sg.Slider(
-            (-255, 255),
+            (-1, 1),
             config['brightness'],
-            1,
+            0.1,
             orientation="h",
             size=(40, 15),
-            key="-BRIGTHNESS-",
+            key="-BRIGHTNESS-",
             )
     ],
     [
@@ -183,6 +181,17 @@ layout = [
             orientation="h",
             size=(40, 15),
             key="-DITHER-",
+            )
+    ],
+    [
+        sg.Text("FPS"),
+        sg.Slider(
+            (1, 30),
+            config['fps'],
+            1,
+            orientation="h",
+            size=(40, 15),
+            key="-FPS-",
             )
     ],
 ]
@@ -240,42 +249,42 @@ while(True):
     #print(frame.shape)
     #print(type(frame))
 
-    palette = palettes['CRTGB']
-    if values['-PALETTE-'] in palettes:
-        palette = palettes[values["-PALETTE-"]]
+    if ret:
+        palette = palettes['CRTGB']
+        if values['-PALETTE-'] in palettes:
+            palette = palettes[values["-PALETTE-"]]
 
-    frame = resize(frame)
-    frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"])
-    frame = brightness(frame, values["-BRIGTHNESS-"])
-    frame = bayerFilter(frame, values['-DITHER-'])
-    frame = colorize(frame, palette)
-    frame = resize(frame, 800, 720)
+        frame = resize(frame)
+        frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
+        frame = bayerFilter(frame, values['-DITHER-'])
+        frame = colorize(frame, palette)
+        frame = resize(frame, 800, 720)
 
-    xoff = (OUT_SIZE[0]-800)//2
-    if xoff > 0:
-        if values['-BACKGROUND-']:
-            frame_bg = np.copy(background)
-        else:
-            frame_bg = np.zeros(background.shape).astype(np.uint8)
-        frame_bg[:,xoff:-xoff,:] = frame
-        frame = frame_bg
+        xoff = (OUT_SIZE[0]-800)//2
+        if xoff > 0:
+            if values['-BACKGROUND-']:
+                frame_bg = np.copy(background)
+            else:
+                frame_bg = np.zeros(background.shape).astype(np.uint8)
+            frame_bg[:,xoff:-xoff,:] = frame
+            frame = frame_bg
 
-    # 136x128 emoji
-    #frame[0:126,0:128] = thumbs_up
-    #frame = overlay_transparent(frame, thumbs_up, 10, 10)
+        # 136x128 emoji
+        #frame[0:126,0:128] = thumbs_up
+        #frame = overlay_transparent(frame, thumbs_up, 10, 10)
 
-    preview = frame
-    if values['-MIRROR-']:
-        preview = cv2.flip(preview, 1)
+        preview = frame
+        if values['-MIRROR-']:
+            preview = cv2.flip(preview, 1)
 
-    imgbytes = cv2.imencode(".png", 
-            cv2.resize(
-                cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
-                (400, 225))
-            )[1].tobytes()
-    window["-IMAGE-"].update(data=imgbytes)
+        imgbytes = cv2.imencode(".png", 
+                cv2.resize(
+                    cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
+                    (400, 225))
+                )[1].tobytes()
+        window["-IMAGE-"].update(data=imgbytes)
 
-    fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     for item in config_items:
         if item.value_name in values:
@@ -295,10 +304,13 @@ while(True):
     if wk == ord('q'):
         break
 
-    time.sleep(1/30.0)
+    time.sleep(1/config['fps'])
 
 config_save()
-
+print("Config saved")
 window.close()
+print("Window closed")
 vid.release()
+print("Video released")
 cv2.destroyAllWindows()
+print("Windows destroyed")
