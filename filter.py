@@ -1,5 +1,15 @@
 #!/usr/bin/python3
 
+# Using 
+# - CV2 for webcam capture
+# - v4l2loopback for 'webcam' output
+# - numpy for filters
+# to create a GameBoy camera like experience for webcam usage
+
+# Inspired by:
+# https://petapixel.com/2020/09/04/this-guy-turned-his-game-boy-camera-into-a-functional-webcam/
+# https://maple.pet/webgbcam/
+
 import time
 import cv2
 import numpy as np
