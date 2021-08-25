@@ -36,6 +36,7 @@ ConfigItem = namedtuple('ConfigItem', ['id','value_name','default_value'])
 config_items = [
     ConfigItem('mirror', '-MIRROR-', True),
     ConfigItem('background', '-BACKGROUND-', True),
+    ConfigItem('mario', '-MARIO-', True),
     ConfigItem('palette', '-PALETTE-', 'CRTGB'),
     ConfigItem('brightness', '-BRIGHTNESS-', 0),
     ConfigItem('contrast', '-CONTRAST-', 1),
@@ -168,6 +169,7 @@ layout = [
         sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value=config['palette'], size=(20, 1), key="-PALETTE-"),
         sg.Checkbox('Mirror preview', default=config['mirror'], key="-MIRROR-"),
         sg.Checkbox('Background', default=config['background'], key="-BACKGROUND-"),
+        sg.Checkbox('Mario', default=config['mario'], key="-MARIO-"),
     ],
     [
         sg.Text("Brightness", size=slider_label_size),
@@ -344,7 +346,8 @@ def update_frame():
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
         #frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
-        frame = mario_walking.overlay(frame)
+        if values['-MARIO-']:
+            frame = mario_walking.overlay(frame)
         frame = colorize(frame, palette)
         frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
 
