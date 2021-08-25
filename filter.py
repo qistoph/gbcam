@@ -59,13 +59,15 @@ def config_save():
 #OUT_SIZE=(800, 600)
 OUT_SIZE=(1280, 720)
 
+CAP_SIZE=(1280, 720)
+
 vid = cv2.VideoCapture(0)
 fake = pyfakewebcam.FakeWebcam('/dev/video2', *OUT_SIZE)
 
 # CV_CAP_PROP_FRAME_COUNT
 #print("Frame default resolution: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + "; " + str(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)) + ")")
-vid.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+vid.set(cv2.CAP_PROP_FRAME_WIDTH, CAP_SIZE[0])
+vid.set(cv2.CAP_PROP_FRAME_HEIGHT, CAP_SIZE[1])
 print("Frame resolution set to: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + "; " + str(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)) + ")")
 
 #print("Frame default count: " + str(vid.get(cv2.CAP_PROP_FRAME_COUNT)))
@@ -220,7 +222,7 @@ layout = [
     [
         sg.Text("Zoom"),
         sg.Slider(
-            (1, 300),
+            (1, min(CAP_SIZE)//2-2),
             config['zoom'],
             1,
             orientation="h",
@@ -293,9 +295,12 @@ while(True):
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
         frame = colorize(frame, palette)
-        frame = resize(frame, 800, 720)
+        #frame = resize(frame, 800, 720) # HD height, with 10:9 ratio
 
-        xoff = (OUT_SIZE[0]-800)//2
+        gb_ratio_width = 10*OUT_SIZE[1]//9
+        frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
+
+        xoff = (OUT_SIZE[0]-gb_ratio_width)//2
         if xoff > 0:
             if values['-BACKGROUND-']:
                 frame_bg = np.copy(background)
