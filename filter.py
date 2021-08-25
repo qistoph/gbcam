@@ -51,6 +51,8 @@ for item in config_items:
 config_changed = False
 config_saveat = time.time()
 
+next_frame_at = time.time()
+
 def config_save():
     with open(config_filename, 'w') as f:
         f.write(yaml.dump(config))
@@ -275,12 +277,7 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
 
     return bg_img
 
-while(True):
-    event, values = window.read(timeout=20)
-    if event == sg.WIN_CLOSED:
-        break
-    #print(values)
-
+def update_frame():
     ret, frame = vid.read()
     #print(frame.shape)
     #print(type(frame))
@@ -328,6 +325,16 @@ while(True):
 
         fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+while(True):
+    event, values = window.read(timeout=20)
+    if event == sg.WIN_CLOSED:
+        break
+    #print(values)
+
+    if time.time() > next_frame_at:
+        next_frame_at = time.time() + 1/config['fps']
+        update_frame()
+
     for item in config_items:
         if item.value_name in values:
             if config[item.id] != values[item.value_name]:
@@ -345,8 +352,6 @@ while(True):
 
     if wk == ord('q'):
         break
-
-    time.sleep(1/config['fps'])
 
 config_save()
 print("Config saved")
