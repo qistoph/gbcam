@@ -297,15 +297,33 @@ def overlay_sprite(im, sp, x, y):
     #print("x,y:", (x, y))
     #print("w,h:", (w, h))
 
+    if h <= 0 or w <= 0:
+        return im
+
     sp = sp[:h, :w]
 
     im[y:y+h, x:x+w] = np.where(sp < 4, sp, im[y:y+h, x:x+w])
     return im
 
-mw = 0
-mw_x = -30
+class Animation:
+    def __init__(self, sprite, pos=(0,0), speed=(0,0)):
+        self.frames = sprite
+        self.frame_cnt = len(sprite)
+        self.frame_idx = 0
+        self.pos = np.array(pos)
+        self.speed = speed
+
+    def update(self):
+        self.pos += self.speed
+        self.frame_idx = (self.frame_idx + 1) % self.frame_cnt
+
+    def overlay(self, frame):
+        #print("overlay sprite at", self.pos)
+        return overlay_sprite(frame, self.frames[self.frame_idx], *self.pos)
+
+mario_walking = Animation([cv2.flip(f, 1) for f in sprites.mario_walking], (-30,114), (4, 0))
+
 def update_frame():
-    global mw, mw_x
     ret, frame = vid.read()
     #print(frame.shape)
     #print(type(frame))
@@ -317,16 +335,16 @@ def update_frame():
 
         gb_ratio_width = 10*OUT_SIZE[1]//9
 
-        sprite = sprites.mario_walking[mw]
-        mw = (mw + 1) % len(sprites.mario_walking)
-        sp_w = sprite.shape[1]
-        mw_x = (mw_x + sp_w + 3) % (160 + sp_w) - sp_w
+        mario_walking.update()
+        if mario_walking.pos[0] >= 160:
+            mario_walking.pos[0] -= 190 # screen (160) + sprite (30)
 
         frame = zoom(frame, values["-ZOOM-"]*(min(CAP_SIZE)//2-2))
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
-        frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
+        #frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
+        frame = mario_walking.overlay(frame)
         frame = colorize(frame, palette)
         frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
 

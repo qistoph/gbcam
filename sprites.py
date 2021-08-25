@@ -4,8 +4,6 @@ from PIL import Image
 def load_sprite(filename):
     im = Image.open(filename)
     data = np.array(im)
-
-    print(data)
     return data
 
 def load_animated_sprite(filename, size):
