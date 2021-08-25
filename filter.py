@@ -222,9 +222,9 @@ layout = [
     [
         sg.Text("Zoom"),
         sg.Slider(
-            (1, min(CAP_SIZE)//2-2),
+            (0, 1),
             config['zoom'],
-            1,
+            .1,
             orientation="h",
             size=(40, 15),
             key="-ZOOM-",
@@ -290,7 +290,7 @@ while(True):
         if values['-PALETTE-'] in palettes:
             palette = palettes[values["-PALETTE-"]]
 
-        frame = zoom(frame, values["-ZOOM-"])
+        frame = zoom(frame, values["-ZOOM-"]*(min(CAP_SIZE)//2-2))
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
