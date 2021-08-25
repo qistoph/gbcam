@@ -172,6 +172,9 @@ layout = [
         sg.Checkbox('Mario', default=config['mario'], key="-MARIO-"),
     ],
     [
+        sg.Button("Logo"),
+    ],
+    [
         sg.Text("Brightness", size=slider_label_size),
         sg.Slider(
             (-1, 1),
@@ -282,7 +285,7 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
 
     return bg_img
 
-def overlay_sprite(im, sp, x, y):
+def overlay_sprite(im, sp, y, x):
     #im[y:y+sp.shape[0], x:x+sp.shape[1]] = sp
 
     if x < 0:
@@ -323,67 +326,97 @@ class Animation:
         #print("overlay sprite at", self.pos)
         return overlay_sprite(frame, self.frames[self.frame_idx], *self.pos)
 
-mario_walking = Animation([cv2.flip(f, 1) for f in sprites.mario_walking], (-30,114), (4, 0))
+mario_walking = Animation([cv2.flip(f, 1) for f in sprites.mario_walking], (114,-30), (0, 4))
 
-def update_frame():
+def camera_image():
     ret, frame = vid.read()
     #print(frame.shape)
     #print(type(frame))
 
     if ret:
-        palette = palettes['CRTGB']
-        if values['-PALETTE-'] in palettes:
-            palette = palettes[values["-PALETTE-"]]
-
-        gb_ratio_width = 10*OUT_SIZE[1]//9
-
         mario_walking.update()
-        if mario_walking.pos[0] >= 160:
-            mario_walking.pos[0] -= 190 # screen (160) + sprite (30)
+        if mario_walking.pos[1] >= 160:
+            mario_walking.pos[1] -= 190 # screen (160) + sprite (30)
 
         frame = zoom(frame, values["-ZOOM-"]*(min(CAP_SIZE)//2-2))
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
-        #frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
+        #frame = overlay_sprite(frame, cv2.flip(sprite, 1), 114, mw_x)
         if values['-MARIO-']:
             frame = mario_walking.overlay(frame)
-        frame = colorize(frame, palette)
-        frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
 
-        xoff = (OUT_SIZE[0]-gb_ratio_width)//2
-        if xoff > 0:
-            if values['-BACKGROUND-']:
-                frame_bg = np.copy(background)
-            else:
-                frame_bg = np.zeros(background.shape).astype(np.uint8)
-            frame_bg[:,xoff:-xoff,:] = frame
-            frame = frame_bg
+        return frame
+    return None
 
-        # 136x128 emoji
-        #frame[0:126,0:128] = thumbs_up
-        #frame = overlay_transparent(frame, thumbs_up, 10, 10)
+logo_done_at = time.time() + 4
 
-        preview = frame
-        if values['-MIRROR-']:
-            preview = cv2.flip(preview, 1)
+def logo_image():
+    frame = 3 * np.ones((144, 160), dtype=np.uint8)
 
-        preview_size = (225*frame.shape[1]//frame.shape[0], 225)
-        #print(frame.shape, preview_size)
-        imgbytes = cv2.imencode(".png", 
-                cv2.resize(
-                    cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
-                    preview_size)
-                )[1].tobytes()
-        window["-IMAGE-"].update(data=imgbytes)
+    #min_y = -sprites.logo.shape[0]
+    #max_y = (frame.shape[0] - sprites.logo.shape[0] ) // 2
+    #print(time.time() - logo_done_at)
+    #y = int((time.time() - logo_done_at) * (max_y - min_y) / 4 + min_y)
+    #x = (frame.shape[1] - sprites.logo.shape[1]) // 2
+    #print((y,x))
 
-        fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    y, x = (np.array(frame.shape) - sprites.logo.shape) // 2
+
+    overlay_sprite(frame, sprites.logo, y, x)
+
+    return frame
+
+def update_frame():
+    if time.time() < logo_done_at:
+        frame = logo_image()
+    else:
+        frame = camera_image()
+
+    gb_ratio_width = 10*OUT_SIZE[1]//9
+
+    palette = palettes['CRTGB']
+    if values['-PALETTE-'] in palettes:
+        palette = palettes[values["-PALETTE-"]]
+
+    frame = colorize(frame, palette)
+    frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
+
+    xoff = (OUT_SIZE[0]-gb_ratio_width)//2
+    if xoff > 0:
+        if values['-BACKGROUND-']:
+            frame_bg = np.copy(background)
+        else:
+            frame_bg = np.zeros(background.shape).astype(np.uint8)
+        frame_bg[:,xoff:-xoff,:] = frame
+        frame = frame_bg
+
+    # 136x128 emoji
+    #frame[0:126,0:128] = thumbs_up
+    #frame = overlay_transparent(frame, thumbs_up, 10, 10)
+
+    preview = frame
+    if values['-MIRROR-']:
+        preview = cv2.flip(preview, 1)
+
+    preview_size = (225*frame.shape[1]//frame.shape[0], 225)
+    #print(frame.shape, preview_size)
+    imgbytes = cv2.imencode(".png", 
+            cv2.resize(
+                cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
+                preview_size)
+            )[1].tobytes()
+    window["-IMAGE-"].update(data=imgbytes)
+
+    fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
 while(True):
     event, values = window.read(timeout=20)
     if event == sg.WIN_CLOSED:
         break
-    #print(values)
+
+    if event == 'Logo':
+        logo_done_at = time.time() + 4
 
     if time.time() > next_frame_at:
         next_frame_at = time.time() + 1/config['fps']

@@ -19,6 +19,8 @@ def load_animated_sprite(filename, size):
         frames.append(frame)
     return frames
 
+logo = load_sprite('nintendo.gif')
+
 mario = load_sprite('mario.gif')
 
 mario_walking = load_animated_sprite('mario_walking.gif', (30, 30))
