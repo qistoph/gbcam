@@ -317,10 +317,12 @@ while(True):
         if values['-MIRROR-']:
             preview = cv2.flip(preview, 1)
 
+        preview_size = (225*frame.shape[1]//frame.shape[0], 225)
+        #print(frame.shape, preview_size)
         imgbytes = cv2.imencode(".png", 
                 cv2.resize(
                     cv2.cvtColor(preview, cv2.COLOR_BGR2RGB),
-                    (400, 225))
+                    preview_size)
                 )[1].tobytes()
         window["-IMAGE-"].update(data=imgbytes)
 
