@@ -157,6 +157,8 @@ def title_update():
         title += "*"
     window.TKroot.title(title)
 
+slider_label_size = (10, 1)
+
 layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
@@ -167,7 +169,7 @@ layout = [
         sg.Checkbox('Background', default=config['background'], key="-BACKGROUND-"),
     ],
     [
-        sg.Text("Brightness"),
+        sg.Text("Brightness", size=slider_label_size),
         sg.Slider(
             (-1, 1),
             config['brightness'],
@@ -178,7 +180,7 @@ layout = [
             )
     ],
     [
-        sg.Text("Contrast"),
+        sg.Text("Contrast", size=slider_label_size),
         sg.Slider(
             (-4, 4),
             config['contrast'],
@@ -189,7 +191,7 @@ layout = [
             )
     ],
     [
-        sg.Text("Gamma"),
+        sg.Text("Gamma", size=slider_label_size),
         sg.Slider(
             (-4, 4),
             config['gamma'],
@@ -200,7 +202,7 @@ layout = [
             )
     ],
     [
-        sg.Text("Dither"),
+        sg.Text("Dither", size=slider_label_size),
         sg.Slider(
             (0, 10),
             config['dither'],
@@ -211,7 +213,7 @@ layout = [
             )
     ],
     [
-        sg.Text("FPS"),
+        sg.Text("FPS", size=slider_label_size),
         sg.Slider(
             (1, 30),
             config['fps'],
@@ -222,7 +224,7 @@ layout = [
             )
     ],
     [
-        sg.Text("Zoom"),
+        sg.Text("Zoom", size=slider_label_size),
         sg.Slider(
             (0, 1),
             config['zoom'],
