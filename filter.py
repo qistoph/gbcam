@@ -41,6 +41,7 @@ config_items = [
     ConfigItem('gamma', '-GAMMA-', 1),
     ConfigItem('dither', '-DITHER-', 0.5),
     ConfigItem('fps', '-FPS-', 10),
+    ConfigItem('zoom', '-ZOOM-', 0),
 ]
 
 for item in config_items:
@@ -69,8 +70,18 @@ print("Frame resolution set to: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + ";
 
 #print("Frame default count: " + str(vid.get(cv2.CAP_PROP_FRAME_COUNT)))
 
+def zoom(im, amount):
+    ratio = im.shape[0] / im.shape[1]
+    amount_x = int(amount)
+    amount_y = int(amount * ratio)
+    #print("zoom amount:", amount, "x:", amount_x, "y:", amount_y)
+    res = im[amount_x:-amount_x-1, amount_y:-amount_y-1]
+    #print(im.shape, "=>", res.shape)
+    return res
+
 def resize(im, W=160, H=144):
     scale = W / im.shape[1]
+    #print("im.shape:", im.shape, "W,H:", (W,H), "scale:", scale)
     if scale * im.shape[0] < H:
         scale = H / im.shape[0]
 
@@ -83,6 +94,7 @@ def resize(im, W=160, H=144):
 
     #return im.resize((W, H), box=box)
     #return cv2.resize(im_crop, dsize=(W, H), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+    #print(im_crop.shape, (W, H), scale, scale)
     return cv2.resize(im_crop, dsize=(W, H), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
 
 def greyscale(data, contrast=1.0, gamma=1.0, brightness=0.0):
@@ -204,6 +216,17 @@ layout = [
             key="-FPS-",
             )
     ],
+    [
+        sg.Text("Zoom"),
+        sg.Slider(
+            (1, 300),
+            config['zoom'],
+            1,
+            orientation="h",
+            size=(40, 15),
+            key="-ZOOM-",
+            )
+    ],
 ]
 
 window = sg.Window(window_default_title, layout)
@@ -264,6 +287,7 @@ while(True):
         if values['-PALETTE-'] in palettes:
             palette = palettes[values["-PALETTE-"]]
 
+        frame = zoom(frame, values["-ZOOM-"])
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
