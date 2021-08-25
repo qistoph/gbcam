@@ -85,8 +85,8 @@ def resize(im, W=160, H=144):
     if scale * im.shape[0] < H:
         scale = H / im.shape[0]
 
-    x_off = int((im.shape[1] - W/scale) // 2)
-    y_off = int((im.shape[0] - H/scale) // 2)
+    x_off = int((im.shape[1] - W//scale) // 2)
+    y_off = int((im.shape[0] - H//scale) // 2)
     #box = (x_off, y_off, W/scale + x_off, H/scale + y_off)
 
     #print(scale, [y_off,y_off+int(H/scale), x_off,int(x_off+W/scale)])
@@ -157,6 +157,7 @@ layout = [
     [sg.Text("OpenCV Demo", size=(60, 1), justification="center")],
     [sg.Image(filename="", key="-IMAGE-")],
     [
+        sg.Text("Palette"),
         sg.Combo(list(filter(lambda d: d[0] != '_', palettes)), default_value=config['palette'], size=(20, 1), key="-PALETTE-"),
         sg.Checkbox('Mirror preview', default=config['mirror'], key="-MIRROR-"),
         sg.Checkbox('Background', default=config['background'], key="-BACKGROUND-"),
