@@ -19,6 +19,7 @@ import PySimpleGUI as sg
 import oyaml as yaml
 from collections import namedtuple
 from emojimg import thumbs_up
+import sprites
 
 # sudo modprobe v4l2loopback devices=2
 
@@ -279,7 +280,32 @@ def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=Non
 
     return bg_img
 
+def overlay_sprite(im, sp, x, y):
+    #im[y:y+sp.shape[0], x:x+sp.shape[1]] = sp
+
+    if x < 0:
+        sp = sp[:, -x:]
+        x = 0
+
+    if y < 0:
+        sp = sp[-y:, :]
+        y = 0
+
+    h = min(sp.shape[0], im.shape[0] - y)
+    w = min(sp.shape[1], im.shape[1] - x)
+
+    #print("x,y:", (x, y))
+    #print("w,h:", (w, h))
+
+    sp = sp[:h, :w]
+
+    im[y:y+h, x:x+w] = np.where(sp > 0, sp - 1, im[y:y+h, x:x+w])
+    return im
+
+mw = 0
+mw_x = -30
 def update_frame():
+    global mw, mw_x
     ret, frame = vid.read()
     #print(frame.shape)
     #print(type(frame))
@@ -293,6 +319,13 @@ def update_frame():
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
+
+        sprite = sprites.mario_walking[mw]
+        frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
+        mw = (mw + 1) % len(sprites.mario_walking)
+        sp_w = sprite.shape[1]
+        mw_x = (mw_x + sp_w + 3) % (frame.shape[1] + sp_w) - sp_w
+
         frame = colorize(frame, palette)
         #frame = resize(frame, 800, 720) # HD height, with 10:9 ratio
 
