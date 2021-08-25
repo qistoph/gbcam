@@ -299,7 +299,7 @@ def overlay_sprite(im, sp, x, y):
 
     sp = sp[:h, :w]
 
-    im[y:y+h, x:x+w] = np.where(sp > 0, sp - 1, im[y:y+h, x:x+w])
+    im[y:y+h, x:x+w] = np.where(sp < 4, sp, im[y:y+h, x:x+w])
     return im
 
 mw = 0
