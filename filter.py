@@ -315,21 +315,19 @@ def update_frame():
         if values['-PALETTE-'] in palettes:
             palette = palettes[values["-PALETTE-"]]
 
+        gb_ratio_width = 10*OUT_SIZE[1]//9
+
+        sprite = sprites.mario_walking[mw]
+        mw = (mw + 1) % len(sprites.mario_walking)
+        sp_w = sprite.shape[1]
+        mw_x = (mw_x + sp_w + 3) % (160 + sp_w) - sp_w
+
         frame = zoom(frame, values["-ZOOM-"]*(min(CAP_SIZE)//2-2))
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
-
-        sprite = sprites.mario_walking[mw]
         frame = overlay_sprite(frame, cv2.flip(sprite, 1), mw_x, 114)
-        mw = (mw + 1) % len(sprites.mario_walking)
-        sp_w = sprite.shape[1]
-        mw_x = (mw_x + sp_w + 3) % (frame.shape[1] + sp_w) - sp_w
-
         frame = colorize(frame, palette)
-        #frame = resize(frame, 800, 720) # HD height, with 10:9 ratio
-
-        gb_ratio_width = 10*OUT_SIZE[1]//9
         frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
 
         xoff = (OUT_SIZE[0]-gb_ratio_width)//2
