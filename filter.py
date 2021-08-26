@@ -354,14 +354,21 @@ logo_done_at = time.time() + 4
 def logo_image():
     frame = 3 * np.ones((144, 160), dtype=np.uint8)
 
-    #min_y = -sprites.logo.shape[0]
-    #max_y = (frame.shape[0] - sprites.logo.shape[0] ) // 2
+    logo_at_p = (logo_done_at - time.time()) / 4
+
+    min_y = -sprites.logo.shape[0]
+    max_y = (frame.shape[0] - sprites.logo.shape[0] ) // 2
+
+    print(min_y, max_y)
+
+    y = int((1 - logo_at_p) * (max_y - min_y) + min_y)
+    x = (frame.shape[1] - sprites.logo.shape[1]) // 2
+
     #print(time.time() - logo_done_at)
     #y = int((time.time() - logo_done_at) * (max_y - min_y) / 4 + min_y)
-    #x = (frame.shape[1] - sprites.logo.shape[1]) // 2
-    #print((y,x))
+    print((y,x))
 
-    y, x = (np.array(frame.shape) - sprites.logo.shape) // 2
+    #y, x = (np.array(frame.shape) - sprites.logo.shape) // 2
 
     overlay_sprite(frame, sprites.logo, y, x)
 
