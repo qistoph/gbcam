@@ -11,6 +11,7 @@
 # https://maple.pet/webgbcam/
 
 import time
+import datetime
 import cv2
 import numpy as np
 from gbc_palettes import palettes
@@ -20,6 +21,7 @@ import oyaml as yaml
 from collections import namedtuple
 from emojimg import thumbs_up
 import sprites
+from PIL import Image
 
 # sudo modprobe v4l2loopback devices=2
 
@@ -173,6 +175,7 @@ layout = [
     ],
     [
         sg.Button("Logo"),
+        sg.Button("Save"),
     ],
     [
         sg.Text("Brightness", size=slider_label_size),
@@ -371,7 +374,12 @@ def logo_image():
 
     return frame
 
-def update_frame():
+def save_frame(frame, postfix):
+    filename = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + postfix
+    with open(filename, 'wb') as f:
+        Image.fromarray(frame).save(f)
+
+def update_frame(save = False):
     if time.time() < logo_done_at:
         frame = logo_image()
     else:
@@ -384,6 +392,7 @@ def update_frame():
         palette = palettes[values["-PALETTE-"]]
 
     frame = colorize(frame, palette)
+    if save: save_frame(frame, '.png')
     frame = resize(frame, gb_ratio_width, OUT_SIZE[1]) # HD height, with 10:9 ratio
 
     xoff = (OUT_SIZE[0]-gb_ratio_width)//2
@@ -422,9 +431,13 @@ while(True):
     if event == 'Logo':
         logo_done_at = time.time() + 4
 
+    save_snap = False
+    if event == 'Save':
+        save_snap = True
+
     if time.time() > next_frame_at:
         next_frame_at = time.time() + 1/config['fps']
-        update_frame()
+        update_frame(save_snap)
 
     for item in config_items:
         if item.value_name in values:
