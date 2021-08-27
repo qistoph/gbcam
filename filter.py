@@ -337,17 +337,11 @@ def camera_image():
     #print(type(frame))
 
     if ret:
-        mario_walking.update()
-        if mario_walking.pos[1] >= 160:
-            mario_walking.pos[1] -= 190 # screen (160) + sprite (30)
-
         frame = zoom(frame, values["-ZOOM-"]*(min(CAP_SIZE)//2-2))
         frame = resize(frame)
         frame = greyscale(frame, 2**values["-CONTRAST-"], 2**values["-GAMMA-"], values["-BRIGHTNESS-"])
         frame = bayerFilter(frame, values['-DITHER-'])
         #frame = overlay_sprite(frame, cv2.flip(sprite, 1), 114, mw_x)
-        if values['-MARIO-']:
-            frame = mario_walking.overlay(frame)
 
         return frame
     return None
@@ -384,6 +378,13 @@ def update_frame(save = False):
         frame = logo_image()
     else:
         frame = camera_image()
+
+    mario_walking.update()
+    if mario_walking.pos[1] >= 160:
+        mario_walking.pos[1] -= 190 # screen (160) + sprite (30)
+
+    if values['-MARIO-'] and frame is not None:
+        frame = mario_walking.overlay(frame)
 
     gb_ratio_width = 10*OUT_SIZE[1]//9
 
