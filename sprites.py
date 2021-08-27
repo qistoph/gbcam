@@ -22,5 +22,6 @@ def load_animated_sprite(filename, size):
 logo = load_sprite('sprites/nintendo.gif')
 
 mario = load_sprite('sprites/mario.gif')
+mario_jump = load_sprite('sprites/mario_jump.gif')
 
 mario_walking = load_animated_sprite('sprites/mario_walking.gif', (30, 30))

@@ -318,7 +318,7 @@ class Animation:
         self.frames = sprite
         self.frame_idx = 0
         self.pos = np.array(pos)
-        self.speed = speed
+        self.speed = np.array(speed)
 
     def update(self):
         self.pos += self.speed
@@ -331,27 +331,24 @@ class Animation:
 class Mario (Animation):
     def __init__(self):
         super().__init__([cv2.flip(f, 1) for f in sprites.mario_walking], (114,-30), (0, 4))
-        self.jumpforce = 0
 
     def jump(self):
-        if self.jumpforce == 0:
-            self.frames = [sprites.mario]
+        if self.speed[0] == 0 and self.pos[0] == 114:
+            self.frames = [cv2.flip(sprites.mario_jump, 1)]
             self.frame_idx = 0
-            self.jumpforce = 5
+            self.speed[0] = -5
 
     def update(self):
-        vs = self.speed[0] - self.jumpforce
-
-        #print("vs:", vs)
-
-        self.speed = (int(vs), self.speed[1])
-        if self.jumpforce < 0.1:
-            self.jumpforce = 0
-        else:
-            self.jumpforce *= 0.1
-
-        #print(self.jumpforce)
         super().update()
+
+        if self.pos[0] > 114:
+            self.pos[0] = 114
+            self.speed[0] = 0
+            self.frames = [cv2.flip(f, 1) for f in sprites.mario_walking]
+        elif self.pos[0] < 114:
+            self.speed[0] += 1
+
+        #print("speed:", self.speed, "pos:", self.pos)
 
 mario_walking = Mario()
 
@@ -368,7 +365,7 @@ def camera_image():
         #frame = overlay_sprite(frame, cv2.flip(sprite, 1), 114, mw_x)
 
         return frame
-    return None
+    return np.ones([144, 160], dtype=np.uint8)
 
 logo_times = [4, 1] # motion, stationary
 logo_done_at = time.time() + sum(logo_times)
@@ -404,6 +401,8 @@ def update_frame(save = False):
         frame = camera_image()
 
     mario_walking.update()
+    if mario_walking.pos[1] == 42:
+        mario_walking.jump()
     if mario_walking.pos[1] >= 160:
         mario_walking.pos[1] -= 190 # screen (160) + sprite (30)
 
