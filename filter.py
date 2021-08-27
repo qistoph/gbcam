@@ -374,15 +374,16 @@ def logo_image():
     frame = 3 * np.ones((144, 160), dtype=np.uint8)
 
     logo_at_p = 1 - (logo_done_at - time.time()) / sum(logo_times)
-    logo_at_p = min(1, (sum(logo_times)/logo_times[0]) * logo_at_p)
+    #print(f'{logo_at_p:.2}')
+    logo_at_p = min(1.0, (sum(logo_times)/logo_times[0]) * logo_at_p)
     #print(int(logo_done_at - time.time()), "p:", logo_at_p)
 
     min_y = -sprites.logo.shape[0]
     max_y = (frame.shape[0] - sprites.logo.shape[0] ) // 2
-    #print(min_y, max_y)
 
     y = int((logo_at_p) * (max_y - min_y) + min_y)
     x = (frame.shape[1] - sprites.logo.shape[1]) // 2
+    #print(min_y, max_y, y, f'{logo_at_p:.2}')
     #print((y,x))
 
     overlay_sprite(frame, sprites.logo, y, x)
@@ -453,7 +454,7 @@ while(True):
         break
 
     if event == 'Logo':
-        logo_done_at = time.time() + 4
+        logo_done_at = time.time() + sum(logo_times)
 
     save_snap = False
     if event == 'Save':
