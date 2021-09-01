@@ -368,7 +368,7 @@ def camera_image():
     return np.ones([144, 160], dtype=np.uint8)
 
 logo_times = [4, 1] # motion, stationary
-logo_done_at = time.time() + sum(logo_times)
+logo_done_at = 0
 
 def logo_image():
     frame = 3 * np.ones((144, 160), dtype=np.uint8)
@@ -392,8 +392,10 @@ def logo_image():
 
 def save_frame(frame, postfix):
     filename = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + postfix
+    print("Saving as", filename)
     with open(filename, 'wb') as f:
         Image.fromarray(frame).save(f)
+    print(filename, "saved")
 
 def update_frame(save = False):
     if time.time() < logo_done_at:
@@ -448,6 +450,7 @@ def update_frame(save = False):
 
     fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+save_next_frame = False
 while(True):
     event, values = window.read(timeout=20)
     if event == sg.WIN_CLOSED:
@@ -456,13 +459,13 @@ while(True):
     if event == 'Logo':
         logo_done_at = time.time() + sum(logo_times)
 
-    save_snap = False
     if event == 'Save':
-        save_snap = True
+        save_next_frame = True
 
     if time.time() > next_frame_at:
         next_frame_at = time.time() + 1/config['fps']
-        update_frame(save_snap)
+        update_frame(save_next_frame)
+        save_next_frame = False
 
     for item in config_items:
         if item.value_name in values:
