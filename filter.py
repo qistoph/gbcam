@@ -243,6 +243,9 @@ layout = [
             key="-ZOOM-",
             )
     ],
+    [
+        sg.Text("", key="-STATUS-"),
+    ],
 ]
 
 window = sg.Window(window_default_title, layout)
@@ -392,10 +395,10 @@ def logo_image():
 
 def save_frame(frame, postfix):
     filename = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + postfix
-    print("Saving as", filename)
+    window["-STATUS-"].update(f"Saving as {filename}")
     with open(filename, 'wb') as f:
         Image.fromarray(frame).save(f)
-    print(filename, "saved")
+    window["-STATUS-"].update(f"{filename} saved")
 
 def update_frame(save = False):
     if time.time() < logo_done_at:
