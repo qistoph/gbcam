@@ -451,7 +451,8 @@ def update_frame(save = False):
             )[1].tobytes()
     window["-IMAGE-"].update(data=imgbytes)
 
-    fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    #fake.schedule_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    fake.schedule_frame(frame)
 
 save_next_frame = False
 while(True):
