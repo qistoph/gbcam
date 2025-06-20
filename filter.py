@@ -67,8 +67,8 @@ OUT_SIZE=(1280, 720)
 
 CAP_SIZE=(1280, 720)
 
-vid = cv2.VideoCapture(0)
-fake = pyfakewebcam.FakeWebcam('/dev/video2', *OUT_SIZE)
+vid = cv2.VideoCapture(1)
+fake = pyfakewebcam.FakeWebcam('/dev/video0', *OUT_SIZE)
 
 # CV_CAP_PROP_FRAME_COUNT
 #print("Frame default resolution: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + "; " + str(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)) + ")")
