@@ -2,7 +2,8 @@ import emoji
 import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 
-font = ImageFont.truetype('/home/chris/Downloads/AppleColorEmoji.ttf', 109, encoding='unic')
+# Downloaded from https://github.com/samuelngs/apple-emoji-linux/releases
+font = ImageFont.truetype('AppleColorEmoji.ttf', 137, encoding='unic')
 textToDraw = emoji.emojize(':thumbs_up:')
 (_,_,w,h) = font.getbbox(textToDraw)
 
