@@ -1,6 +1,10 @@
 # gbcam
 
-Create a GameBoy Camera like experience for webcam usage.
+"Stream like a GameBoy Camera."
+
+gbcam provides a virtual camera that filters a real camera stream to make it look like a GameBoy Camera.
+
+![gbcam Preview](/images/gbcam_preview1.jpg)
 
 ## Installation
 
