@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 from gbc_palettes import palettes
 import pyfakewebcam
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 import oyaml as yaml
 from collections import namedtuple
 from emojimg import thumbs_up
@@ -67,8 +67,8 @@ OUT_SIZE=(1280, 720)
 
 CAP_SIZE=(1280, 720)
 
-vid = cv2.VideoCapture(1)
-fake = pyfakewebcam.FakeWebcam('/dev/video0', *OUT_SIZE)
+vid = cv2.VideoCapture(0)
+fake = pyfakewebcam.FakeWebcam('/dev/video2', *OUT_SIZE)
 
 # CV_CAP_PROP_FRAME_COUNT
 #print("Frame default resolution: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + "; " + str(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)) + ")")

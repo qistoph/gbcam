@@ -1,4 +1,4 @@
 opencv-python
 pyfakewebcam
-PySimpleGUI
+FreeSimpleGUI
 oyaml
