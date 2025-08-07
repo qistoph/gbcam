@@ -6,10 +6,6 @@
 # - numpy for filters
 # to create a GameBoy camera like experience for webcam usage
 
-# Inspired by:
-# https://petapixel.com/2020/09/04/this-guy-turned-his-game-boy-camera-into-a-functional-webcam/
-# https://maple.pet/webgbcam/
-
 import time
 import datetime
 import cv2
@@ -19,11 +15,8 @@ import pyfakewebcam
 import FreeSimpleGUI as sg
 import oyaml as yaml
 from collections import namedtuple
-from emojimg import thumbs_up
 import sprites
 from PIL import Image
-
-# sudo modprobe v4l2loopback devices=2
 
 config_filename = 'config.yaml'
 
@@ -36,6 +29,8 @@ except FileNotFoundError:
 ConfigItem = namedtuple('ConfigItem', ['id','value_name','default_value'])
 
 config_items = [
+    ConfigItem('camera', '-CAMERA-', '/dev/video0'),
+    ConfigItem('fakecam', '-FAKECAM-', '/dev/video2'),
     ConfigItem('mirror', '-MIRROR-', True),
     ConfigItem('background', '-BACKGROUND-', True),
     ConfigItem('mario', '-MARIO-', True),
@@ -67,8 +62,8 @@ OUT_SIZE=(1280, 720)
 
 CAP_SIZE=(1280, 720)
 
-vid = cv2.VideoCapture(0)
-fake = pyfakewebcam.FakeWebcam('/dev/video2', *OUT_SIZE)
+vid = cv2.VideoCapture(config['camera'])
+fake = pyfakewebcam.FakeWebcam(config['fakecam'], *OUT_SIZE)
 
 # CV_CAP_PROP_FRAME_COUNT
 #print("Frame default resolution: (" + str(vid.get(cv2.CAP_PROP_FRAME_WIDTH)) + "; " + str(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)) + ")")
@@ -433,10 +428,6 @@ def update_frame(save = False):
             frame_bg = np.zeros(background.shape).astype(np.uint8)
         frame_bg[:,xoff:-xoff,:] = frame
         frame = frame_bg
-
-    # 136x128 emoji
-    #frame[0:126,0:128] = thumbs_up
-    #frame = overlay_transparent(frame, thumbs_up, 10, 10)
 
     preview = frame
     if values['-MIRROR-']:
